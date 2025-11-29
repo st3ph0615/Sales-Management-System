@@ -1,0 +1,47 @@
+.cs-sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: white;
+  padding: 30px 20px;
+  border-right: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  position: fixed;        /* fixes overlapping */
+  left: 0;
+  top: 0;
+}
+
+.cs-logo{
+  font-weight:800;
+  font-size:20px;
+  text-align:center;
+  margin-bottom:14px;
+}
+.cs-nav{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  margin-top:10px;
+}
+.cs-nav a{
+  text-decoration:none;
+  color:#333;
+  padding:10px 12px;
+  border-radius:10px;
+  transition:all .12s ease;
+}
+.cs-nav a:hover, .cs-nav a.active{
+  background:#eaf4ff;
+  color:#0b66d1;
+  font-weight:600;
+}
+.cs-logout{
+  background:transparent;
+  border:none;
+  color:#e03b3b;
+  font-weight:700;
+  cursor:pointer;
+  padding:8px 12px;
+  text-align:left;
+}

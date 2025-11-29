@@ -1,0 +1,114 @@
+/* Layout */
+.cd-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.cd-main {
+  flex: 1;
+  padding: 30px;
+  background: linear-gradient(to bottom, #e9f3ff, #cce0f5);
+}
+
+/* Page Title */
+.page-title {
+  margin-bottom: 20px;
+  font-size: 26px;
+  color: #0a2a4a;
+}
+
+/* Empty Cart */
+.empty-cart {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-box {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+/* Cart Table */
+.cart-container {
+  background: #ffffffdd;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.cart-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.cart-table th {
+  background: #0a2a4a;
+  color: white;
+  padding: 10px;
+  text-align: left;
+  font-size: 15px;
+}
+
+.cart-table td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.cart-table tr:hover td {
+  background: #f4f8ff;
+}
+
+/* Inputs */
+.qty-input {
+  width: 60px;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* Button */
+.checkout-btn {
+  margin-top: 10px;
+  padding: 10px 20px;
+  background: #005ae0;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.checkout-btn:hover {
+  background: #003f99;
+}
+
+/* Text Formatting */
+.product-name {
+  font-weight: 500;
+}
+
+.price,
+.subtotal {
+  font-weight: bold;
+  color: #00376b;
+}
+.delete-btn {
+  background: #e63946;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: #c72e3c;
+}

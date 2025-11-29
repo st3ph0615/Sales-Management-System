@@ -1,0 +1,63 @@
+.page-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.orders-table {
+  width: 100%;
+  background: white;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.orders-table th {
+  text-align: left;
+  padding: 14px;
+  background: #f4f7ff;
+  font-weight: 600;
+  color: #1b2a4e;
+  border-bottom: 2px solid #e5e9f2;
+}
+
+.orders-table td {
+  padding: 14px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+.orders-table tr:hover {
+  background: #f9fbff;
+}
+
+/* STATUS COLORS */
+.status-pill {
+  padding: 5px 12px;
+  font-size: 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.status-pill.paid {
+  background: #28a745;
+}
+
+.status-pill.pending {
+  background: #f0ad4e;
+}
+
+.status-pill.cancelled {
+  background: #dc3545;
+}
+
+.empty-box {
+  padding: 30px;
+  background: white;
+  border-radius: 10px;
+  text-align: center;
+  color: #777;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
