@@ -50,30 +50,27 @@ export default function CustomerOrders() {
             </thead>
 
                     <tbody>
-  {orders.map((o) => (
-    <tr key={o.order_id}>
-      
-      {/* Instead of order number → show product list */}
-      <td>
-        {o.items && o.items.length > 0
-          ? o.items.map((it) => `${it.product_name} (x${it.quantity})`).join(", ")
-          : "—"}
-      </td>
+  {orders.map((o) => {
+    const itemList = Array.isArray(o.items)
+      ? o.items.map((it) => `${it.product_name} (x${it.quantity})`).join(", ")
+      : "—";
 
-      <td>{new Date(o.order_date).toLocaleString()}</td>
-
-      <td>{o.payment_method || "—"}</td>
-
-      <td>₱{Number(o.total_amount).toFixed(2)}</td>
-
-      <td>
-        <span className={`status-pill ${o.status.toLowerCase()}`}>
-          {o.status}
-        </span>
-      </td>
-    </tr>
-  ))}
+    return (
+      <tr key={o.order_id}>
+        <td>{itemList}</td>
+        <td>{new Date(o.order_date).toLocaleString()}</td>
+        <td>{o.payment_method || "—"}</td>
+        <td>₱{Number(o.total_amount).toFixed(2)}</td>
+        <td>
+          <span className={`status-pill ${o.status.toLowerCase()}`}>
+            {o.status}
+          </span>
+        </td>
+      </tr>
+    );
+  })}
 </tbody>
+
 
 
           </table>

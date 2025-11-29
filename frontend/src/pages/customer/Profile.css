@@ -1,0 +1,66 @@
+.profile-main {
+  padding: 20px;
+}
+
+.profile-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.08);
+  max-width: 650px;
+  width: 100%;
+}
+
+.page-title {
+  margin-bottom: 20px;
+  font-weight: 600;
+  color: #0d1b2a;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #1a2b3c;
+}
+
+.profile-form input,
+.profile-form textarea {
+  padding: 10px 12px;
+  border: 1px solid #c9d6df;
+  border-radius: 8px;
+  font-size: 15px;
+  width: 100%;
+}
+
+.profile-form textarea {
+  height: 120px;
+  resize: vertical;
+}
+
+.save-btn {
+  margin-top: 10px;
+  width: 160px;
+  padding: 10px;
+  border-radius: 8px;
+}
+.cs-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.cs-main {
+  flex: 1;
+  padding: 30px;
+  padding-left: 260px; /* ← Add this to push content beside sidebar */
+}

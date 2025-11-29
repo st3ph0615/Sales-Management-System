@@ -10,57 +10,63 @@ exports.getMyOrders = async (req, res) => {
     const user_id = req.user.user_id;
 
     // Get customer_id
-    const c = await pool.query(
+    const customerRes = await pool.query(
       `SELECT customer_id FROM customers WHERE user_id = $1 LIMIT 1`,
       [user_id]
     );
 
-    if (c.rows.length === 0) return res.json([]);
+    if (customerRes.rows.length === 0) return res.json([]);
 
-    const customer_id = c.rows[0].customer_id;
+    const customer_id = customerRes.rows[0].customer_id;
 
-    // Fetch orders + product names
+    // Get orders + payment + items
     const orders = await pool.query(
       `
       SELECT 
-        o.order_id,
-        o.order_date,
-        o.total_amount,
-        o.status,
+          o.order_id,
+          o.order_date,
+          o.total_amount,
+          o.status,
 
-        -- latest payment method
-        (
-          SELECT p.payment_method 
-          FROM payments p
-          WHERE p.order_id = o.order_id
-          ORDER BY p.payment_date DESC
-          LIMIT 1
-        ) AS payment_method,
+          -- Payment Method
+          (
+            SELECT p.payment_method
+            FROM payments p
+            WHERE p.order_id = o.order_id
+            ORDER BY p.payment_date DESC
+            LIMIT 1
+          ) AS payment_method,
 
-        -- product names list
-        (
-          SELECT json_agg(json_build_object(
-            'product_name', pr.product_name,
-            'quantity', oi.quantity
-          ))
-          FROM order_items oi
-          JOIN products pr ON pr.product_id = oi.product_id
-          WHERE oi.order_id = o.order_id
-        ) AS items
+          -- Order Items List
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'product_name', pr.product_name,
+                'quantity', oi.quantity
+              )
+            ) FILTER (WHERE oi.order_id IS NOT NULL),
+            '[]'
+          ) AS items
 
       FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.order_id
+      LEFT JOIN products pr ON pr.product_id = oi.product_id
       WHERE o.customer_id = $1
-      ORDER BY o.order_date DESC
+      GROUP BY o.order_id
+      ORDER BY o.order_date DESC;
       `,
       [customer_id]
     );
 
     res.json(orders.rows);
+
   } catch (err) {
     console.error("Orders Fetch Error:", err);
     res.status(500).json({ error: "Server error fetching orders" });
   }
 };
+
+
 
 
 // ======================================================
