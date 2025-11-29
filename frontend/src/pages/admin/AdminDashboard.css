@@ -1,0 +1,47 @@
+.admin-dashboard {
+  padding: 30px;
+}
+
+.admin-page-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 25px;
+  color: #1e293b;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #64748b;
+}
+
+.stats-grid {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.stats-card {
+  background: #ffffff;
+  padding: 22px;
+  border-radius: 12px;
+  width: 220px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  transition: 0.2s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.stats-label {
+  font-size: 18px;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.stats-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #0f172a;
+}

@@ -1,0 +1,37 @@
+.admin-orders-page {
+  padding: 24px;
+}
+
+.admin-orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.admin-orders-table th {
+  background: #0a2342;
+  color: white;
+  padding: 12px;
+  text-align: left;
+}
+
+.admin-orders-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.admin-orders-table .empty {
+  text-align: center;
+  padding: 20px;
+  color: #777;
+}
+
+select {
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
