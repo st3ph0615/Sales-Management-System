@@ -11,7 +11,7 @@ export default function Login({ onLogin, activeTab, onTabChange }) {
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://localhost:3000/api/auth/login", {
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
         email,
         password,
       });
@@ -76,3 +76,5 @@ const styles = {
     borderRadius: 6,
   },
 };
+
+     

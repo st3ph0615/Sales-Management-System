@@ -9,7 +9,7 @@ export default function AdminOrders() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:3000/api/admin/orders", {
+    fetch("http://localhost:5000/api/admin/orders", {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => r.json())
@@ -21,21 +21,26 @@ export default function AdminOrders() {
   const updateStatus = async (order_id, newStatus) => {
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`http://localhost:3000/api/admin/orders/${order_id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ status: newStatus })
-    });
+    const res = await fetch(
+      `http://localhost:5000/api/admin/orders/${order_id}/status`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      }
+    );
 
     const data = await res.json();
 
     if (data.error) return alert(data.error);
 
     setOrders(prev =>
-      prev.map(o => (o.order_id === order_id ? { ...o, status: newStatus } : o))
+      prev.map(o =>
+        o.order_id === order_id ? { ...o, status: newStatus } : o
+      )
     );
   };
 
@@ -53,7 +58,6 @@ export default function AdminOrders() {
                 <th>Order #</th>
                 <th>Customer</th>
                 <th>Total</th>
-                <th>Payment</th>
                 <th>Status</th>
                 <th>Update</th>
               </tr>
@@ -65,12 +69,11 @@ export default function AdminOrders() {
                   <td colSpan="6" className="empty">No orders found.</td>
                 </tr>
               ) : (
-                orders.map((o) => (
+                orders.map(o => (
                   <tr key={o.order_id}>
-                    <td>{o.order_id.slice(0, 8)}</td>
-                    <td>{o.customer_name}</td>
+                    <td>{o.order_id ? o.order_id.slice(0, 8) : "—"}</td>
+                    <td>{o.customer_email}</td>
                     <td>₱{Number(o.total_amount).toFixed(2)}</td>
-                    <td>{o.payment_status}</td>
                     <td>{o.status}</td>
                     <td>
                       <select

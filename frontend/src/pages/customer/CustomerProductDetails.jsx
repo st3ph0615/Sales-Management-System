@@ -22,7 +22,7 @@ export default function CustomerProductDetails() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:3000/api/products/${id}`)
+    fetch(`http://localhost:5000/api/products/${id}`)
       .then((r) => {
         if (!r.ok) throw new Error("Product not found");
         return r.json();

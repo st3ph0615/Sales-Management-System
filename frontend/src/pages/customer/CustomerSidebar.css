@@ -45,3 +45,15 @@
   padding:8px 12px;
   text-align:left;
 }
+/* -------- LAYOUT FIX -------- */
+
+.cs-layout {
+  display: flex;
+}
+
+/* Pushes main content to the right of the fixed sidebar */
+.cs-main {
+  margin-left: 240px;             /* SAME AS .cs-sidebar width */
+  padding: 40px;
+  width: calc(100% - 240px);
+}

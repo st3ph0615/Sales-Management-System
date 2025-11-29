@@ -15,7 +15,6 @@ router.get("/products", adminController.getAllProducts);
 router.post("/products", adminController.createProduct);
 
 // Orders
-router.get("/orders", adminController.getAllOrders);
-router.put("/orders/:id", adminController.updateOrderStatus);
+
 
 module.exports = router;

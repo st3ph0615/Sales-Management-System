@@ -9,7 +9,7 @@ export default function CustomerOrders() {
     useEffect(() => {
       const token = localStorage.getItem("token");
 
-      fetch("http://localhost:3000/api/orders/my", {
+      fetch("http://localhost:5000/api/orders/my", {
         headers: {
           Authorization: `Bearer ${token}`
         }

@@ -8,9 +8,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:3000/api/admin/dashboard", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    fetch("http://localhost:5000/api/admin/dashboard", {
+  headers: { Authorization: `Bearer ${token}` }
+})
+
+
+
       .then(r => {
         if (!r.ok) throw new Error("Failed to fetch admin stats");
         return r.json();

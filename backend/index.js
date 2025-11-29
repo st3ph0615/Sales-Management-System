@@ -6,15 +6,20 @@ const cors = require("cors");
 app.use(express.json());
 app.use(cors());
 
-// ROUTES
-app.use("/admin", require("./routes/admin"));
-app.use("/api/admin/users", require("./routes/adminUsers"));
-app.use("/auth", require("./routes/auth"));
-app.use("/orders", require("./routes/orders"));
-app.use("/payments", require("./routes/payments"));
-app.use("/products", require("./routes/products"));
-app.use("/profile", require("./routes/profile"));
+// ADMIN ROUTES
 
+
+app.use("/api/admin", require("./routes/admin"));
+app.use("/api/admin/orders", require("./routes/adminOrder"));
+app.use("/api/admin/products", require("./routes/adminProducts"));
+app.use("/api/admin/users", require("./routes/adminUsers"));
+
+// PUBLIC / USER ROUTES
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/orders", require("./routes/orders"));
+app.use("/api/payments", require("./routes/payments"));
+app.use("/api/products", require("./routes/products"));
+app.use("/api/profile", require("./routes/profile"));   // ✅ FIXED
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`🚀 BACKEND RUNNING ON PORT ${PORT}`));

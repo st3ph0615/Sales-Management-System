@@ -26,6 +26,9 @@ function App() {
     if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
 
+ 
+
+
   const handleLogin = (loggedUser) => {
     setUser(loggedUser);
 
