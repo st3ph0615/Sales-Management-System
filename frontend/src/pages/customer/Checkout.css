@@ -1,5 +1,29 @@
+/* Align table columns */
+.checkout-table th:nth-child(1),
+.checkout-table td:nth-child(1) {
+  text-align: left;      /* Product */
+  width: 60%;
+}
+
+.checkout-table th:nth-child(2),
+.checkout-table td:nth-child(2) {
+  text-align: center;    /* Qty */
+  width: 20%;
+}
+
+.checkout-table th:nth-child(3),
+.checkout-table td:nth-child(3) {
+  text-align: right;     /* Subtotal */
+  width: 20%;
+}
+
+
+
 .checkout-container h2 {
   margin-bottom: 20px;
+}
+.cd-layout {
+    width: 100vw;
 }
 
 .checkout-card {

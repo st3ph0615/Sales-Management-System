@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  coordinator:
+    image: citusdata/citus:12.1
+    container_name: citus_coordinator
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: salesmanagement
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - citus_network
+    command: postgres
+
+  worker1:
+    image: citusdata/citus:12.1
+    container_name: citus_worker1
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: salesmanagement
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - citus_network
+    depends_on:
+      - coordinator
+    command: postgres
+
+networks:
+  citus_network:
