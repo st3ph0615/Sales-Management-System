@@ -200,7 +200,7 @@ export default function CustomerProducts() {
                     </div>
                   )}
 
-                  {/* 🚫 Removed Add to Cart */}
+                  {/* Removed Add to Cart */}
                   <div className="grid-actions">
                     <Link
                       to={`/customer/products/${p.product_id}`}

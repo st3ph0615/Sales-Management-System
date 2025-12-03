@@ -93,7 +93,7 @@ exports.login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) return res.status(400).json({ error: "Invalid credentials" });
 
-    // ⭐ GET customer_id
+    //  GET customer_id
     const c = await pool.query(
       "SELECT customer_id FROM customers WHERE user_id = $1 LIMIT 1",
       [user.user_id]

@@ -18,7 +18,7 @@ exports.getAllUsers = async (req, res) => {
 
     res.json(users.rows);
   } catch (err) {
-    console.error("❌ Error fetching users:", err);
+    console.error(" Error fetching users:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -38,7 +38,7 @@ exports.updateRole = async (req, res) => {
 
     res.json({ message: "Role updated successfully" });
   } catch (err) {
-    console.error("❌ Error updating role:", err);
+    console.error(" Error updating role:", err);
     res.status(500).json({ error: "Failed to update role" });
   }
 };
@@ -57,7 +57,7 @@ exports.deleteUser = async (req, res) => {
 
     res.json({ message: "User deleted successfully" });
   } catch (err) {
-    console.error("❌ Error deleting user:", err);
+    console.error(" Error deleting user:", err);
     res.status(500).json({ error: "Failed to delete user" });
   }
 };

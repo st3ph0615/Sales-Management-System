@@ -1,10 +1,9 @@
 const pool = require("../db");
 
 
-// ======================================================
 // GET /api/orders/my
 // Fetch logged-in user's customer orders
-// ======================================================
+
 exports.getMyOrders = async (req, res) => {
   try {
     const user_id = req.user.user_id;
@@ -19,7 +18,7 @@ exports.getMyOrders = async (req, res) => {
 
     const customer_id = customerRes.rows[0].customer_id;
 
-    // 1️⃣ Fetch all orders (no JOIN — Citus SAFE)
+    // Fetch all orders (no JOIN — Citus SAFE)
     const ordersRes = await pool.query(
       `
       SELECT 
@@ -46,7 +45,7 @@ exports.getMyOrders = async (req, res) => {
 
     if (orders.length === 0) return res.json([]);
 
-    // 2️⃣ Fetch items for all orders
+    // Fetch items for all orders
     const itemsRes = await pool.query(
       `
       SELECT 
@@ -55,15 +54,17 @@ exports.getMyOrders = async (req, res) => {
         oi.quantity,
         oi.subtotal
       FROM order_items oi
+      
       JOIN products pr ON pr.product_id = oi.product_id
-      WHERE oi.customer_id = $1;
+      JOIN orders o ON o.order_id = oi.order_id   -- <- KEY FIX
+      WHERE o.customer_id = $1;
       `,
       [customer_id]
     );
 
     const items = itemsRes.rows;
 
-    // 3️⃣ Attach items to orders
+    // Attach items to orders
     const orderMap = {};
     orders.forEach(o => {
       orderMap[o.order_id] = { ...o, items: [] };
@@ -95,8 +96,6 @@ exports.getMyOrders = async (req, res) => {
 exports.createOrder = async (req, res) => {
   const client = await pool.connect();
 
-
-
   try {
     const customer_id = req.user.customer_id;
 
@@ -104,8 +103,14 @@ exports.createOrder = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized: No customer ID" });
     }
 
-    const { shipping_address, billing_address, total_amount, notes, items, payment } =
-      req.body;
+    const {
+      shipping_address,
+      billing_address,
+      total_amount,
+      notes,
+      items,
+      payment,
+    } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ error: "Invalid order payload" });
@@ -113,6 +118,7 @@ exports.createOrder = async (req, res) => {
 
     await client.query("BEGIN");
 
+    // INSERT ORDER
     const orderRes = await client.query(
       `
       INSERT INTO orders 
@@ -125,16 +131,18 @@ exports.createOrder = async (req, res) => {
 
     const order_id = orderRes.rows[0].order_id;
 
+    // INSERT ORDER ITEMS (⚡ NO CUSTOMER_ID!)
     for (const it of items) {
       await client.query(
         `
         INSERT INTO order_items 
-          (order_item_id, order_id, customer_id, product_id, quantity, subtotal)
-        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
+          (order_item_id, order_id, product_id, quantity, subtotal)
+        VALUES (gen_random_uuid(), $1, $2, $3, $4)
         `,
-        [order_id, customer_id, it.product_id, it.quantity, it.subtotal]
+        [order_id, it.product_id, it.quantity, it.subtotal]
       );
 
+      // UPDATE STOCK
       await client.query(
         `UPDATE products
          SET stock_quantity = stock_quantity - $1
@@ -143,6 +151,7 @@ exports.createOrder = async (req, res) => {
       );
     }
 
+    // INSERT PAYMENT
     await client.query(
       `
       INSERT INTO payments 
@@ -155,7 +164,7 @@ exports.createOrder = async (req, res) => {
         payment.payment_method || "Cash on Delivery",
         payment.payment_status,
         payment.transaction_id || null,
-        payment.amount_paid
+        payment.amount_paid,
       ]
     );
 
@@ -170,4 +179,6 @@ exports.createOrder = async (req, res) => {
     client.release();
   }
 };
+
+
 

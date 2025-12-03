@@ -16,7 +16,7 @@ export default function CustomerOrders() {
       })
         .then((r) => r.json())
         .then((data) => {
-          console.log("ORDERS FROM API:", data);   // ← ADD THIS
+          console.log("ORDERS FROM API:", data);   
           setOrders(data);
         })
         .catch(() => setOrders([]))

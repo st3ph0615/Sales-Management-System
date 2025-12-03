@@ -23,7 +23,7 @@ exports.getAllProducts = async (req, res) => {
 
     res.json(q.rows);
   } catch (err) {
-    console.error("❌ Error fetching products:", err.message);
+    console.error(" Error fetching products:", err.message);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 };
@@ -45,7 +45,7 @@ exports.getProductById = async (req, res) => {
 
     res.json(q.rows[0]);
   } catch (err) {
-    console.error("❌ Error fetching product:", err.message);
+    console.error(" Error fetching product:", err.message);
     res.status(500).json({ error: "Error fetching product" });
   }
 };

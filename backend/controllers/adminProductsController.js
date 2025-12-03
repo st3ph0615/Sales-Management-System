@@ -21,7 +21,7 @@ exports.getAllProducts = async (req, res) => {
 
     res.json(q.rows);
   } catch (err) {
-    console.error("❌ Error loading products:", err);
+    console.error(" Error loading products:", err);
     res.status(500).json({ error: "Failed to load products" });
   }
 };
@@ -42,7 +42,7 @@ exports.getProductById = async (req, res) => {
 
     res.json(q.rows[0]);
   } catch (err) {
-    console.error("❌ Error fetching product:", err);
+    console.error(" Error fetching product:", err);
     res.status(500).json({ error: "Failed to get product" });
   }
 };
@@ -70,7 +70,7 @@ exports.createProduct = async (req, res) => {
 
     res.json({ message: "Product created successfully" });
   } catch (err) {
-    console.error("❌ Error creating product:", err);
+    console.error(" Error creating product:", err);
     res.status(500).json({ error: "Failed to create product" });
   }
 };
@@ -96,7 +96,7 @@ exports.updateProduct = async (req, res) => {
 
     res.json(q.rows[0]);
   } catch (err) {
-    console.error("❌ Update product error:", err);
+    console.error(" Update product error:", err);
     res.status(500).json({ error: "Failed to update product" });
   }
 };
@@ -121,7 +121,7 @@ exports.deleteProduct = async (req, res) => {
 
     res.json({ message: "Product archived (soft deleted)" });
   } catch (err) {
-    console.error("❌ Error deleting product:", err);
+    console.error(" Error deleting product:", err);
     res.status(500).json({ error: "Failed to delete product" });
   }
 };

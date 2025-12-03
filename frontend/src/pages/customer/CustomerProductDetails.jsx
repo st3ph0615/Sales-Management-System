@@ -35,7 +35,7 @@ export default function CustomerProductDetails() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // ⭐⭐⭐ Add to Cart
+  //  Add to Cart
   const handleAddToCart = () => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
 
@@ -57,7 +57,7 @@ export default function CustomerProductDetails() {
     alert("Added to cart!");
   };
 
-  // ⭐⭐⭐ NEW BUY NOW (redirect to checkout, NOT create order)
+  //  NEW BUY NOW (redirect to checkout, NOT create order)
   const handleBuyNow = () => {
     const user = JSON.parse(localStorage.getItem("user"));
 

@@ -16,7 +16,7 @@ exports.getDashboardStats = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Dashboard error:", err);
+    console.error("Dashboard error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -34,7 +34,7 @@ exports.getAllProducts = async (req, res) => {
     res.json(q.rows);
 
   } catch (err) {
-    console.error("❌ Product load error:", err);
+    console.error("Product load error:", err);
     res.status(500).json({ error: "Failed to load products" });
   }
 };
@@ -52,7 +52,7 @@ exports.createProduct = async (req, res) => {
     res.json({ message: "Product created successfully" });
 
   } catch (err) {
-    console.error("❌ Create product error:", err);
+    console.error("Create product error:", err);
     res.status(500).json({ error: "Failed to create product" });
   }
 };
@@ -75,7 +75,7 @@ exports.getAllOrders = async (req, res) => {
     res.json(q.rows);
 
   } catch (err) {
-    console.error("❌ Orders load error:", err);
+    console.error("Orders load error:", err);
     res.status(500).json({ error: "Failed to load orders" });
   }
 };
@@ -93,7 +93,7 @@ exports.updateOrderStatus = async (req, res) => {
     res.json({ message: "Order updated" });
 
   } catch (err) {
-    console.error("❌ Update order status error:", err);
+    console.error("Update order status error:", err);
     res.status(500).json({ error: "Failed to update order status" });
   }
 };

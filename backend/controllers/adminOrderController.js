@@ -22,7 +22,7 @@ exports.getAllOrders = async (req, res) => {
 
     return res.json(q.rows);
   } catch (err) {
-    console.error("❌ Error fetching admin orders:", err);
+    console.error(" Error fetching admin orders:", err);
     return res.status(500).json({ error: "Failed to load orders" });
   }
 };
@@ -63,7 +63,7 @@ exports.getOrderById = async (req, res) => {
 
     return res.json(q.rows[0]);
   } catch (err) {
-    console.error("❌ Error fetching order:", err);
+    console.error("Error fetching order:", err);
     return res.status(500).json({ error: "Server error" });
   }
 };
@@ -84,7 +84,7 @@ exports.updateOrderStatus = async (req, res) => {
 
     res.json({ message: "Order status updated" });
   } catch (err) {
-    console.error("❌ Error updating order status:", err);
+    console.error(" Error updating order status:", err);
     res.status(500).json({ error: "Failed to update order status" });
   }
 };
