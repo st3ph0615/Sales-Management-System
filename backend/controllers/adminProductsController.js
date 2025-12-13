@@ -16,6 +16,7 @@ exports.getAllProducts = async (req, res) => {
         image_url,
         created_at
       FROM products
+      WHERE is_active = TRUE
       ORDER BY created_at DESC
     `);
 
@@ -25,6 +26,7 @@ exports.getAllProducts = async (req, res) => {
     res.status(500).json({ error: "Failed to load products" });
   }
 };
+
 
 // =======================================================
 // GET SPECIFIC PRODUCT
@@ -106,22 +108,25 @@ exports.updateProduct = async (req, res) => {
 
 
 // =======================================================
-// DELETE (SOFT DELETE: is_active = FALSE)
+// HARD DELETE PRODUCT (Remove from DB)
 // =======================================================
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await pool.query(
-      `UPDATE products 
-       SET is_active = FALSE, updated_at = NOW()
-       WHERE product_id = $1`,
+    const q = await pool.query(
+      `DELETE FROM products WHERE product_id = $1 RETURNING *`,
       [id]
     );
 
-    res.json({ message: "Product archived (soft deleted)" });
+    if (q.rows.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.json({ message: "Product deleted permanently" });
+
   } catch (err) {
-    console.error(" Error deleting product:", err);
+    console.error("Error deleting product:", err);
     res.status(500).json({ error: "Failed to delete product" });
   }
 };

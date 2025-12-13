@@ -13,6 +13,8 @@ import CustomerSettings from "./pages/customer/Settings";
 import CustomerProductDetails from "./pages/customer/CustomerProductDetails";
 import Checkout from "./pages/customer/Checkout";
 
+
+
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -91,6 +93,9 @@ function App() {
         <Route path="/customer/checkout" element={<Checkout />} />
 
         {/* ADMIN ROUTES */}
+
+        
+        
         <Route path="/admin/dashboard" element={requireAdmin(AdminDashboard)} />
         <Route path="/admin/orders" element={requireAdmin(AdminOrders)} />
         <Route path="/admin/products" element={requireAdmin(AdminProducts)} />

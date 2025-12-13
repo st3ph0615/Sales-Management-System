@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import "./AdminLayout.css";
+import React, { memo } from "react";
 
-export default function AdminLayout({ children }) {
+function AdminLayout({ children }) {
   const location = useLocation();
 
   return (
@@ -12,28 +13,36 @@ export default function AdminLayout({ children }) {
         <nav className="admin-nav">
           <Link
             to="/admin/dashboard"
-            className={`admin-link ${location.pathname.includes("dashboard") ? "active" : ""}`}
+            className={`admin-link ${
+              location.pathname.includes("dashboard") ? "active" : ""
+            }`}
           >
             Dashboard
           </Link>
 
           <Link
             to="/admin/products"
-            className={`admin-link ${location.pathname.includes("products") ? "active" : ""}`}
+            className={`admin-link ${
+              location.pathname.includes("products") ? "active" : ""
+            }`}
           >
             Products
           </Link>
 
           <Link
             to="/admin/orders"
-            className={`admin-link ${location.pathname.includes("orders") ? "active" : ""}`}
+            className={`admin-link ${
+              location.pathname.includes("orders") ? "active" : ""
+            }`}
           >
             Orders
           </Link>
 
           <Link
             to="/admin/users"
-            className={`admin-link ${location.pathname.includes("users") ? "active" : ""}`}
+            className={`admin-link ${
+              location.pathname.includes("users") ? "active" : ""
+            }`}
           >
             Users
           </Link>
@@ -54,3 +63,5 @@ export default function AdminLayout({ children }) {
     </div>
   );
 }
+
+export default memo(AdminLayout);

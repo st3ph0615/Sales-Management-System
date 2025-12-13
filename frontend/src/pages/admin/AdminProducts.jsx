@@ -102,16 +102,26 @@ export default function AdminProducts() {
   // DELETE PRODUCT
   // --------------------------
   const deleteProduct = async (id) => {
-    if (!window.confirm("Delete this product?")) return;
-    const token = localStorage.getItem("token");
+  if (!window.confirm("Delete this product permanently?")) return;
 
-    await fetch(`http://localhost:5000/api/admin/products/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  const token = localStorage.getItem("token");
 
-    setProducts((prev) => prev.filter((p) => p.product_id !== id));
-  };
+  const res = await fetch(`http://localhost:5000/api/admin/products/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert("Delete failed: " + data.error);
+    return;
+  }
+
+  alert("Product deleted permanently");
+
+  setProducts(prev => prev.filter(p => p.product_id !== id));
+};
 
   return (
     <AdminLayout>

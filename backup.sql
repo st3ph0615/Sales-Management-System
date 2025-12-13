@@ -2,9 +2,9 @@
 -- PostgreSQL database dump
 --
 
-\restrict il83J4bpaO2ytAgfJ7uR02F9Y7pcIaN75pLgxpGcUv0usgK2cI8l8kqItLgvjN6
+\restrict 8X4CjTmRsu5JEEpEhJeYPSn6VtHhmxOveR450RwTpvVPhuHog0tXMOJbPEkhwZL
 
--- Dumped from database version 18.1
+-- Dumped from database version 16.6 (Debian 16.6-1.pgdg120+1)
 -- Dumped by pg_dump version 18.1
 
 SET statement_timeout = 0;
@@ -18,6 +18,34 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: citus; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS citus WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION citus; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION citus IS 'Citus distributed database';
+
+
+--
+-- Name: citus_columnar; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS citus_columnar WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION citus_columnar; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION citus_columnar IS 'Citus Columnar extension';
+
 
 --
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
@@ -60,11 +88,12 @@ ALTER TABLE public.customers OWNER TO postgres;
 --
 
 CREATE TABLE public.order_items (
-    order_item_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_item_id uuid DEFAULT gen_random_uuid(),
     order_id uuid NOT NULL,
     product_id uuid NOT NULL,
     quantity integer NOT NULL,
     subtotal numeric(12,2) NOT NULL,
+    customer_id uuid NOT NULL,
     CONSTRAINT order_items_quantity_check CHECK ((quantity > 0))
 );
 
@@ -84,7 +113,7 @@ CREATE TABLE public.orders (
     total_amount numeric(12,2) DEFAULT 0.00 NOT NULL,
     status character varying(30) NOT NULL,
     notes text,
-    CONSTRAINT orders_status_check CHECK (((status)::text = ANY ((ARRAY['Pending'::character varying, 'Paid'::character varying, 'Shipped'::character varying, 'Completed'::character varying, 'Cancelled'::character varying])::text[])))
+    CONSTRAINT orders_status_check CHECK (((status)::text = ANY (ARRAY[('Pending'::character varying)::text, ('Paid'::character varying)::text, ('Shipped'::character varying)::text, ('Completed'::character varying)::text, ('Cancelled'::character varying)::text])))
 );
 
 
@@ -138,7 +167,7 @@ CREATE TABLE public.users (
     password_hash character varying(255) NOT NULL,
     role character varying(30) NOT NULL,
     created_at timestamp without time zone DEFAULT now(),
-    CONSTRAINT users_role_check CHECK (((role)::text = ANY ((ARRAY['admin'::character varying, 'staff'::character varying, 'customer'::character varying])::text[])))
+    CONSTRAINT users_role_check CHECK (((role)::text = ANY (ARRAY[('admin'::character varying)::text, ('staff'::character varying)::text, ('customer'::character varying)::text])))
 );
 
 

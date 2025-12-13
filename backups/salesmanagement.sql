@@ -1,0 +1,788 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict 8X4CjTmRsu5JEEpEhJeYPSn6VtHhmxOveR450RwTpvVPhuHog0tXMOJbPEkhwZL
+
+-- Dumped from database version 16.6 (Debian 16.6-1.pgdg120+1)
+-- Dumped by pg_dump version 18.1
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: citus; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS citus WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION citus; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION citus IS 'Citus distributed database';
+
+
+--
+-- Name: citus_columnar; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS citus_columnar WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION citus_columnar; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION citus_columnar IS 'Citus Columnar extension';
+
+
+--
+-- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: customers; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.customers (
+    customer_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid,
+    name character varying(150) NOT NULL,
+    email character varying(120),
+    region character varying(50),
+    address text,
+    phone character varying(40),
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.customers OWNER TO postgres;
+
+--
+-- Name: order_items; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.order_items (
+    order_item_id uuid DEFAULT gen_random_uuid(),
+    order_id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    subtotal numeric(12,2) NOT NULL,
+    customer_id uuid NOT NULL,
+    CONSTRAINT order_items_quantity_check CHECK ((quantity > 0))
+);
+
+
+ALTER TABLE public.order_items OWNER TO postgres;
+
+--
+-- Name: orders; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.orders (
+    order_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    customer_id uuid NOT NULL,
+    order_date timestamp without time zone DEFAULT now(),
+    shipping_address text,
+    billing_address text,
+    total_amount numeric(12,2) DEFAULT 0.00 NOT NULL,
+    status character varying(30) NOT NULL,
+    notes text,
+    CONSTRAINT orders_status_check CHECK (((status)::text = ANY (ARRAY[('Pending'::character varying)::text, ('Paid'::character varying)::text, ('Shipped'::character varying)::text, ('Completed'::character varying)::text, ('Cancelled'::character varying)::text])))
+);
+
+
+ALTER TABLE public.orders OWNER TO postgres;
+
+--
+-- Name: payments; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.payments (
+    payment_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    payment_method character varying(50),
+    payment_status character varying(30) DEFAULT 'Paid'::character varying,
+    transaction_id character varying(200),
+    payment_date timestamp without time zone DEFAULT now(),
+    amount_paid numeric(12,2) NOT NULL
+);
+
+
+ALTER TABLE public.payments OWNER TO postgres;
+
+--
+-- Name: products; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.products (
+    product_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_name character varying(200) NOT NULL,
+    category character varying(100),
+    description text,
+    image_url text,
+    price numeric(10,2) DEFAULT 0.00 NOT NULL,
+    stock_quantity integer DEFAULT 0 NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.products OWNER TO postgres;
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.users (
+    user_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    email character varying(120) NOT NULL,
+    password_hash character varying(255) NOT NULL,
+    role character varying(30) NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    CONSTRAINT users_role_check CHECK (((role)::text = ANY (ARRAY[('admin'::character varying)::text, ('staff'::character varying)::text, ('customer'::character varying)::text])))
+);
+
+
+ALTER TABLE public.users OWNER TO postgres;
+
+--
+-- Data for Name: customers; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.customers (customer_id, user_id, name, email, region, address, phone, created_at) FROM stdin;
+df4b0d97-7ffc-4769-a665-39ecf5903efa	42017061-4e28-423a-9ca6-18b155c71dc8		jean.ran@gmail.com				2025-11-28 17:10:56.595406
+82d0e705-e1f9-43a5-9466-42e7dda7dfb4	\N	Customer 3	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b2bf5c87-2bd2-4a32-a0e2-772aefde97bc	\N	Customer 57	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cd12d659-4bce-45b1-9327-62b40b1b409b	\N	Customer 93	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6ed077a8-dece-49c2-a3d2-159b15f0717a	\N	Customer 116	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2ecb2ba3-3c53-46e9-8111-351c0e4daaea	\N	Customer 169	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+38362e5f-aeb8-48db-9573-a23266146956	\N	Customer 206	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+437ef327-4a39-4cdd-86a9-83654d95ec17	\N	Customer 351	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+611b483a-7ab6-4688-83f1-66465f536b05	\N	Customer 374	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+46c5a9bf-b274-4a3c-ae93-98c0da9dee4c	\N	Customer 414	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c9a55382-b6dc-4c5c-aa50-62392141c42a	\N	Customer 468	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+55fcdb1b-cfc8-42a3-b368-16bd7d7d2572	\N	Customer 531	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+630a465a-f059-4e7a-8d7c-44fecb9cc2e6	\N	Customer 542	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a144fc42-df9a-4c65-984c-fb0ccc810b1a	\N	Customer 577	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2cf4ebe5-a23d-416c-8269-944514ff8e51	\N	Customer 635	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6a5bd07a-db46-435c-a3e1-d862456b48fd	\N	Customer 640	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2b3c4599-5688-49db-800d-396f78c26559	\N	Customer 677	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f18e8ee8-fdd6-4506-aa03-079c76707279	\N	Customer 721	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f53a35ec-c620-4b10-969e-52e2e5e23602	\N	Customer 782	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+11b28ebc-66c2-451e-b326-19e61e3d1c1d	\N	Customer 867	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+42737d2d-00a6-4b1a-823c-25b746723260	\N	Customer 872	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+553e95a4-9f55-458b-a47b-7b9c901c40c0	\N	Customer 909	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ff6f4a78-8f54-4a12-8454-588655c0d4b0	\N	Customer 947	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d9c6bae6-de0f-44ae-a56f-3c857efc2595	\N	Customer 975	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+94a7c9d4-7494-461e-b967-0b459abdf1b2	\N	Customer 1038	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+80b260e9-efc3-483f-a526-751aa02e8a9a	\N	Customer 1046	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+79736fe8-6836-4d84-bbbf-b30cec006dd9	\N	Customer 1091	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f357a29b-4fc4-4f15-83ca-f23e4f30f834	\N	Customer 1122	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fbf53c35-e72f-4e6b-8a3a-55eaea7534c7	\N	Customer 1140	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b40f7429-0940-4e06-aa39-385e540d430f	\N	Customer 1153	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6b31b571-62c3-455a-b148-b37e40773128	\N	Customer 1159	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ccfdd9d2-d537-4e0d-ab38-48ac85c8fc4e	\N	Customer 1204	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e357af6c-480d-46ad-9b45-9a1da8f46da0	\N	Customer 1261	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+23d36910-af6f-4a04-80a6-6ea04f933a3e	\N	Customer 1411	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a05f45e6-15c9-4580-99cd-1e1eb0be8c5d	\N	Customer 1444	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+815951ca-896f-4579-a71d-9197e4328981	\N	Customer 1482	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+86996142-fd9c-4123-8de1-040599a87543	\N	Customer 1485	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e9914104-9920-493f-b92b-ec3f533d366b	\N	Customer 1514	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bfc00b28-af99-44ea-97b7-53ae333634af	\N	Customer 1536	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fa54685c-5649-4f8c-b906-fbb9a11ce5a2	\N	Customer 1573	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4bafcdf9-3884-47ae-8aed-da4c4933e8db	\N	Customer 1587	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2b786ac0-1583-4099-9e1a-030fd7c88672	\N	Customer 1642	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4d88e5e3-c315-4d34-8628-b1c04c27f535	\N	Customer 1654	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0df384e6-e56d-4b94-b5e1-0438f69495d5	\N	Customer 1684	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+804497c6-1778-434e-9a88-d33fb0d8ba16	\N	Customer 1703	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cd583bdf-4786-4276-aded-cf4e2d750a04	\N	Customer 1736	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+054e2915-f19c-4e6b-8a21-a491ca362d26	\N	Customer 1768	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ae1c1604-7d93-482a-9223-52eb68d28081	\N	Customer 1792	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c5dd23bf-a053-4d78-b232-8d7b60e8a941	\N	Customer 1804	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+22728671-116e-497a-9a18-b63f6c9f4866	\N	Customer 1825	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+eb03d671-16fd-4227-a0ef-aaeb39737b7c	\N	Customer 1831	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+df353486-8452-47ef-8ad0-59fe85789fa2	\N	Customer 1840	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+65ac78a1-3243-42ad-9e79-91f761f4afb9	\N	Customer 1857	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f9053b4b-eb67-4f9a-967c-7a3cc6a10f4c	\N	Customer 1871	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cd2a0a7b-7766-4891-8bf6-c4ef81902322	\N	Customer 1872	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a9e68e02-b01f-413e-812d-956e7af2959f	\N	Customer 1897	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+11223601-4a1a-4c23-aa0b-17536e76199a	\N	Customer 1904	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c47d01fe-c901-48cf-91e6-e079b8f93557	\N	Customer 1917	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c4cad581-89c3-40c7-9797-2df9232a8779	\N	Customer 1926	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0e588246-a98f-419f-9556-a23d43d6426f	\N	Customer 1986	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e93ffb77-5cb5-47e9-8d36-0be3c77f4317	\N	Customer 2024	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1e615b4e-ce62-4eb0-b290-5fda38860900	\N	Customer 2027	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+57d9f323-9a39-40e7-8e0a-0b6dbef3c298	\N	Customer 2049	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+dd339ef0-9d05-45b1-98e1-d39dc9ea0556	\N	Customer 2052	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8dcec94e-ac93-41e5-b8f8-bb4ba50bc935	\N	Customer 2078	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bdb085ea-7522-4c86-8be5-3ade544b7d9a	\N	Customer 2080	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6a449b56-5e75-411a-ba82-8287b0fe2ffc	\N	Customer 2128	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+409f45f2-8be0-4c3f-af21-b8395b6359a3	\N	Customer 2135	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2afc0cd0-53c2-49ed-9d63-2f23d0dd52a7	\N	Customer 2200	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5c347386-0fbf-4e1f-8ef4-e27fa00bb0cb	\N	Customer 2262	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bc850850-9f2d-4a48-959d-99935fd3caa9	\N	Customer 2306	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9d5c8565-5c5b-457c-b997-cace52051ac7	\N	Customer 2337	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cb029ee7-ace8-446e-ad36-94ef7b1d1edc	\N	Customer 2345	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d6d7a4d9-ce7a-4f78-b3db-400faa97b39a	\N	Customer 2349	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+21e33497-30a1-453b-b7e8-b4f110508ba1	\N	Customer 2354	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9bb21b55-00c9-4b7f-8fd8-5e9ee0473bc8	\N	Customer 2433	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+88679d82-c1b6-4055-84e3-3b9fcf68493d	\N	Customer 2524	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3d4e938d-5918-4187-8e76-de1db65b1617	\N	Customer 2535	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1b3b705b-b9dc-4162-8e0e-7964e2338217	\N	Customer 2580	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ef435a7c-1544-42a0-80d0-5008a574965c	\N	Customer 2654	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3187e71e-11ad-4989-b179-c0a3768ec71b	\N	Customer 2781	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+50a54abf-d0db-47e1-9455-d5bff60e4285	\N	Customer 2868	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3bcbb7f4-e68b-4959-84c5-66b1ab465799	\N	Customer 2871	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2f73575e-ea66-4bca-919c-a900f37aaf32	\N	Customer 2896	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+411088d4-25c1-4dc0-a5fc-7ff581f5fc5c	\N	Customer 2919	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a3ebc95b-b25e-4070-9608-c88842d0fbb0	\N	Customer 2939	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+70f53756-42b7-43be-9e28-324a1b81f880	\N	Customer 2949	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0250f61b-a078-4118-8dd9-796148f86186	\N	Customer 2957	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f6d49dc9-ca7b-4605-9762-26024c6c3307	\N	Customer 2964	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+023c4deb-d246-4ebb-9465-e619de241833	\N	Customer 2980	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1c4094d8-8e62-43b9-a8f9-663dc4ab2e8e	\N	Customer 3000	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e12d7ddc-77d7-4b1b-b984-a3b50a2b9250	\N	Customer 3050	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1f501903-467e-494e-b775-51a0e0524e50	\N	Customer 3080	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1dd60ad3-f71b-41a6-8f1f-ecb125db2fdf	\N	Customer 3085	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+dd5825eb-2648-4b92-a28f-86061cff819b	\N	Customer 3089	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f5a1f275-1d9b-4657-bbb4-b6179dd51a0c	\N	Customer 3120	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5a6d44c9-3094-493c-99a3-c06d2e79a05c	\N	Customer 3130	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+50485657-43d9-4d85-baaf-529f0b096d81	\N	Customer 3149	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8aa66194-6981-4e38-bf94-4154e547c83a	\N	Customer 3170	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9e7388bb-ebb6-4590-8f84-f3d76337ae04	\N	Customer 3304	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a259bc4a-8ef4-4342-9423-e9cdda1e2f42	\N	Customer 3382	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0d8651dd-d5c8-4b2a-88c4-b60a5d3d8208	\N	Customer 3424	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ac4dee46-6db2-4199-97b0-528c89b846e5	\N	Customer 3426	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+97e7476d-c441-49fe-9700-744d11d858e3	\N	Customer 3430	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4d9c735b-0026-47c2-a9d1-80e40f65c16c	\N	Customer 3455	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a821b778-dc85-4fae-86f4-110427fe4759	\N	Customer 3471	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+80498bbd-12cc-4a23-bee8-ab803f46059a	\N	Customer 3655	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+07cfda22-b9f6-402d-8be0-fae3756a4475	\N	Customer 3672	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+aeca8a33-7dbe-46b0-9bb1-3c3ccd5fd5ea	\N	Customer 3679	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1ef12bba-3ce0-49e6-a137-20610b8b8716	\N	Customer 3693	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+dd54ba85-49a7-4782-8787-61358d6152c6	\N	Customer 3716	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f437cd6e-984a-45c8-8a55-07d49c332843	\N	Customer 3759	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1e93a03d-cfdb-47a5-b1c6-816d97b59227	\N	Customer 3848	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9885d07e-99e9-4d16-a679-429402204d02	\N	Customer 3858	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9fd7414a-322e-4d7b-8568-fba57885d94c	\N	Customer 3889	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9699c328-e902-47b4-bf06-d4ede1d4fe71	\N	Customer 3895	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+193e8a29-566f-4038-b7b6-1d084d4b0de4	\N	Customer 3939	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8334efee-583f-4bbf-b109-e817a1e37190	\N	Customer 3941	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ff91602d-b99f-4c06-99aa-e6800c993cfe	\N	Customer 3950	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ae30467c-4c0f-47b3-9952-f4f68421ec88	\N	Customer 3964	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+03ad4a57-b018-494b-b000-8ad601c3103a	\N	Customer 4056	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+df405108-ded7-4642-8b41-0b1dc1f7ed05	\N	Customer 4085	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1f9f831a-6462-49fd-adcb-d6a13710a56e	\N	Customer 4112	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+da168ae4-78b0-45c6-933c-6ce2d32e29f1	\N	Customer 4129	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2ad24184-eaf6-4fbc-bcdb-8f25fdd9e28b	\N	Customer 4145	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a5191c7e-fa52-45f1-88a7-bce7b1209a13	\N	Customer 4185	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+edf613b3-069b-4d07-8213-655256ae0f3e	\N	Customer 4272	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a3134633-4973-4730-a6bf-9cb893717f97	\N	Customer 4391	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+432db1cf-c025-492b-8b84-d1246005cb4c	\N	Customer 4402	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cf28d0e3-72e8-437b-992e-58cfc4304d10	\N	Customer 4410	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+99553029-d4c9-4bdd-8e43-f49e9d845524	\N	Customer 4443	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+eaf1d867-3935-426c-8ac4-0d29bc0fd975	\N	Customer 4450	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+55cfc236-b41a-4a6f-bea0-982a193718e8	\N	Customer 4467	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d57ff10f-a320-4131-915d-3fb91e1ca5cf	\N	Customer 4481	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c3f0cf63-0dab-4ecf-8e93-ab5bdde6d437	\N	Customer 4540	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c38e1bd7-c047-448f-b860-c029ef82eb82	\N	Customer 4556	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b1624445-2a7e-481b-93d5-6e4f6b8eeba1	\N	Customer 4566	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+badca725-19cb-40da-ab58-5b51e8d087c9	\N	Customer 4706	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+484f3675-c8f8-4171-a18c-12770008567b	\N	Customer 4790	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+de3be3cf-5494-414e-b27b-b34ef947ce95	\N	Customer 4863	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a3a22006-ff4c-40c0-95bf-b2cfe5384c8b	\N	Customer 27	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+dea9bf61-46c8-4f0a-9d23-3c0d7c491381	\N	Customer 34	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fedd4322-f185-41c3-a12e-8788f613e2b0	\N	Customer 104	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+eb2fd94c-ac68-4f4f-8b8b-2c8d1eb8468d	\N	Customer 131	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bad162c2-64e9-44b6-b3e2-bbc375116ac2	\N	Customer 133	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6f6bf54c-e783-4b35-bef0-550b910e0599	\N	Customer 145	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9733e0a7-94d4-4c5c-8213-54a7d4954f55	\N	Customer 164	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fca1b609-20ef-4305-8e7a-e21ee0d65d43	\N	Customer 217	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1d658dea-f200-442b-a2ae-fe592ea95f11	\N	Customer 270	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2f4de594-2c9f-45e8-9bd6-656e68d5fe7b	\N	Customer 331	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3d799685-a2e7-4645-9e5a-5d21b582ab7f	\N	Customer 353	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2fb4d6d4-4d98-4806-9c39-793c0080fc5e	\N	Customer 369	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a3ecaba6-495a-4571-a124-ef369c939674	\N	Customer 388	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e1a8c2ed-57e5-44e4-8d2d-3cadaef72559	\N	Customer 400	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1b22819e-e701-4278-b425-9cc7b087e86c	\N	Customer 428	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fb026606-818a-44d4-9943-51a58f2f3c11	\N	Customer 447	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e00ba8df-5df0-4241-b9cd-d2cc5e0286ad	\N	Customer 500	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+eb0da11d-821a-4465-a00d-a71c625cb54c	\N	Customer 528	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5d58c256-4eb2-493b-8c39-3f4042180690	\N	Customer 558	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+39716d44-0b10-4b02-b17f-e19134229f56	\N	Customer 597	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+674f1949-a5dd-4d9f-853f-10a9dd877abf	\N	Customer 607	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+76fcf055-d558-401f-b927-28a065cc74aa	\N	Customer 623	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d2da5f10-c2f6-472a-b1e1-4cb71f7df6bc	\N	Customer 624	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c8087d52-04d3-4d4c-b091-5abef75c64e5	\N	Customer 736	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a4eafaa6-726d-4dcc-a5d4-dd13b058e63b	\N	Customer 785	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4d5942d7-8e11-441e-a291-5f7eed80beb0	\N	Customer 802	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+32c75b9a-9a81-4b7d-be91-9d7855b11a36	\N	Customer 829	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8825ce42-f3d3-4418-b8fc-43b8062773f7	\N	Customer 842	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6d32526d-dcb4-424e-aa36-8a0320ff5547	\N	Customer 876	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+69ec7779-526e-48f8-b777-87939d8cd83d	\N	Customer 908	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9220a734-53ac-4640-ba41-5a91cd3a9574	\N	Customer 1004	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+61657a13-a52e-4f5c-9a19-f7eab8c6c796	\N	Customer 1006	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2456c616-1db0-4a4d-ac15-f112de3331d0	\N	Customer 1014	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+79a51b6e-f08d-4929-ac58-88ac43383ecc	\N	Customer 1051	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+46dfbd13-fc80-4e5b-9f23-f76604b59d24	\N	Customer 1089	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5f098ca3-10c8-4378-b69e-cf15767010bf	\N	Customer 1098	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ea13cfc2-fb91-4a43-a076-98fe1f80530e	\N	Customer 1121	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ef407e39-760d-43d4-b7c3-3a3c053dcabb	\N	Customer 1164	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7d3d76ee-7519-412a-826e-f7ebef5a7af9	\N	Customer 1207	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2da3fc80-6cad-4bdd-83f7-101d38198009	\N	Customer 1232	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6f32039d-7193-4f78-9045-d63729b31ad0	\N	Customer 1257	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+55205f65-b7c6-47f4-8f0b-9ef632d9a9e4	\N	Customer 1284	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a4d95dd3-bc01-40ce-ba98-5c1bed589117	\N	Customer 1320	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3365cc0b-f169-4892-8c6f-632e6720ebd8	\N	Customer 1327	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2cce79e0-24b0-4323-90aa-53829e623b4a	\N	Customer 1354	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a9a408bf-82e6-4d30-988f-2f9690fc84bf	\N	Customer 1366	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6b376c32-b30f-425c-b8e6-6ca46f8dc7ff	\N	Customer 1368	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ce7125aa-868c-47e5-adb7-930b4a17d6b2	\N	Customer 1381	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+52603216-e5b0-4e59-8fc9-81611acf600e	\N	Customer 1462	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+258f2553-f607-4d91-9e32-61274f4b8446	\N	Customer 1475	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+849b60a6-efa9-43e3-aa50-79166f46b6a3	\N	Customer 1495	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ebbf9091-634d-4037-8d20-ed2f5fcc9ab2	\N	Customer 1516	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d935befc-f812-4db1-b01a-20872ed3cbe5	\N	Customer 1537	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ec58f9d0-5d0f-4565-a1ec-6fe2f82bf6f3	\N	Customer 1550	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ce10efbd-f04f-4b3a-92bd-01083d9a6b2b	\N	Customer 1562	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2f1b3720-1b4d-4110-945c-db3750f28895	\N	Customer 1630	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+609f00da-fbeb-48dc-b22c-a8cb7af258fe	\N	Customer 1650	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b3fd8029-25f2-4543-a56c-43d0702308c0	\N	Customer 1659	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d575d328-0a08-4714-8a6f-027ad93ae764	\N	Customer 1665	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b88b01c2-ea09-472f-b3f5-6213df68d7a0	\N	Customer 1734	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d9068edb-1796-45ec-96cd-7e7c23c4a585	\N	Customer 1786	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b8990657-40ca-4200-9659-a6e2a2512180	\N	Customer 1801	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fc6ee0b8-c656-402c-87d7-5687c6a52ccd	\N	Customer 1851	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6b3a9bad-c4c9-4b52-a071-2fba9f965080	\N	Customer 1880	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c409e529-ff8d-4052-91ac-6b42270c7586	\N	Customer 1889	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+480ae309-cb1f-4f23-9b66-fceed3825c2e	\N	Customer 1905	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1b5a9a8a-d35d-4283-8d6e-e38a08de855a	\N	Customer 1915	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+60e7552c-3024-45e9-8e8c-3951a8d7bd54	\N	Customer 1957	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+875bf21f-93a1-4e28-871e-bd975639292c	\N	Customer 2020	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f6ca5247-ef36-447b-9320-39e314b62d4e	\N	Customer 2025	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fb24f83c-36dd-4013-81e2-ae1e9d393d3d	\N	Customer 2037	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+08cebeeb-c318-4c25-be4f-83096554fb40	\N	Customer 2099	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2c871a9f-ea8c-4824-8cd9-91ef66b16c1f	\N	Customer 2139	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+86e8ca41-6966-4283-9812-05f4c151283b	\N	Customer 2222	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+612c55c2-105b-430d-aefc-60fd4a67f0e7	\N	Customer 2279	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7429dde8-596b-4ee3-88e3-8f9b34279b14	\N	Customer 2303	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+69eae101-8305-4dc0-b0d7-6096289a578b	\N	Customer 2310	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f27145f5-c533-49fe-9987-c31103da75d1	\N	Customer 2315	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+074a7d07-a444-4669-9ee4-d6caf45b7177	\N	Customer 2352	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fc9e1ab8-dd6f-4288-bae1-9d5ad8466904	\N	Customer 2370	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+337404a4-aa9e-4623-8d22-0a6a802495b0	\N	Customer 2424	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d7d6bab3-d207-42b3-84b8-ea715cd2f055	\N	Customer 2432	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a4bc7dbb-e41c-49ae-9637-27ee911b064b	\N	Customer 2435	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f086d2aa-b3d3-43e4-b227-6724a70f9f6a	\N	Customer 2504	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8ce0015e-98d3-4777-9802-444fe9aca62c	\N	Customer 2537	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a8f49bcc-65e0-4e95-bd60-077e26286295	\N	Customer 2551	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ab8f6d4e-659e-4594-b8ea-af642a9aa3c5	\N	Customer 2583	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ece1079b-849f-4396-992e-0102eac0c332	\N	Customer 2608	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fba20d38-df25-41f0-8cd9-1791ced17dae	\N	Customer 2666	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e5e97d2e-4281-4845-ac70-b15d38a7ae38	\N	Customer 2698	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f43144ad-fb82-496d-b5f1-bd80d9a9b533	\N	Customer 2745	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+61cccd54-42c5-4992-96c0-05951cc777eb	\N	Customer 2749	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+923bc1e9-a4c8-4819-92b7-424346db1652	\N	Customer 2789	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+10931d8e-9fc9-4e78-8621-ac2644834449	\N	Customer 2817	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c56aeb63-f0ad-499d-8b5b-ae7c751b33fd	\N	Customer 2819	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8092e509-53c8-4c66-8c53-17ca55531935	\N	Customer 2836	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6826518d-3bcb-4d6b-ab73-4c1e29e42fca	\N	Customer 2842	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+88492f8b-420b-4c6f-91e4-f7aaef8e7d9c	\N	Customer 2847	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+058344fc-44bc-4804-a3d1-d794e70bca3d	\N	Customer 2912	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cc8edbf9-edc0-422a-80df-6050115b5ecf	\N	Customer 2920	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0c12bb9b-83e8-473a-a004-77ec10721a57	\N	Customer 2924	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+05b1a6f4-ede4-4229-b427-aad7d62d8035	\N	Customer 3068	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+768dcab6-1796-4c5a-865b-56d2c124f7b6	\N	Customer 3070	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c7e1f7ce-1155-42be-833c-c468126c5340	\N	Customer 3116	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+deac807e-a8c2-4ff9-bf2c-326921a49980	\N	Customer 3126	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cf2e3fae-a80c-442e-9572-983e91a892cf	\N	Customer 3148	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+466b0308-09d2-4e3f-a6e4-b58f7e1c0126	\N	Customer 3194	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f44f0211-4830-4ec3-965c-278e9b92856e	\N	Customer 3215	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f0fd91fc-2207-4273-a510-bff74f681c9e	\N	Customer 3269	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ba5f2885-5167-4ca9-a8bb-2d291e791c08	\N	Customer 3285	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5b64ab83-97e0-4efa-8ea3-0e08b9514319	\N	Customer 3286	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b2c17e87-acc3-4b20-bad8-2caf87c47a9b	\N	Customer 3311	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ecb46ff3-9449-419b-85c1-aae6f62d1c2c	\N	Customer 3373	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5b301be2-e7eb-4060-afa3-9cb69ed63f25	\N	Customer 3376	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2f7a20c4-dc4b-46e6-a0e5-900fdcdd8162	\N	Customer 3391	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+55f4dab9-63ed-4eea-9c2a-31ea5b172cba	\N	Customer 3411	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fe446fbf-0855-46a3-b408-8c230261795c	\N	Customer 3422	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d06fdd54-3083-46df-815c-144d73dd4a49	\N	Customer 3425	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+39b9781b-83de-4aaa-ab32-d0ad8b004d3f	\N	Customer 3465	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+25a722fe-5b46-4112-b92c-dda63066d96d	\N	Customer 3493	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+927b970d-e3ff-4c23-b7d8-dff483961fe3	\N	Customer 3525	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+96dc48c6-29ba-4657-8609-3f62406c1385	\N	Customer 3537	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2e57b4f6-c601-4186-acbc-cd04f98b4d81	\N	Customer 3545	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a226c3dc-4a02-4ff8-a3a9-ed24f11732e6	\N	Customer 3549	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+17049f6b-172d-4a43-ac86-feae0644bc66	\N	Customer 3571	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+45991934-482b-4080-80f0-919e283aa1b2	\N	Customer 3691	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e43cf41c-5546-4de1-aa04-c83c4e16a3d5	\N	Customer 3803	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+78673e31-10ae-43fd-9cad-6357f3394f33	\N	Customer 3832	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+62cf9057-b79a-4d57-83ae-f20463901df0	\N	Customer 3857	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6ad65824-5b4d-45fb-9fd7-c9fe7c130e1f	\N	Customer 3885	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3f1615a8-4c41-486a-8493-4ee678f2d0cc	\N	Customer 3921	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4660d5c7-e281-4022-b970-0bae74c145b4	\N	Customer 3938	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9064fce6-37d5-45c1-95c8-e5992cd899b6	\N	Customer 3970	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a81f37db-6bee-4698-b433-98c1606389a3	\N	Customer 3985	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+617ffa9f-8484-4504-b48d-7ba292a382b9	\N	Customer 4008	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+232e1c88-2241-43b7-ac20-d90eb38ba2ca	\N	Customer 4039	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1efbb49f-2a6e-4fc9-a813-5575f798f3c0	\N	Customer 4105	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b51f098a-18ac-4e7d-8e8c-a3635882347c	\N	Customer 4108	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4502c923-03c0-4ebd-8069-01b83452b4ce	\N	Customer 4131	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1cde43cb-fb8e-4e63-a00e-e16755aecfd3	\N	Customer 4139	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+91fd46e8-979d-4b2a-b41c-76bf53bbe2c2	\N	Customer 4231	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3f1c1ecd-9019-4fb5-b992-295ec005cc8b	\N	Customer 4244	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3f20e96b-0a05-4c1d-bb06-2975effc4e30	\N	Customer 4366	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4fcb8884-f090-44ab-9aa4-7cd5253cc835	\N	Customer 4377	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b7694d13-071d-4e45-a054-3aae457b2131	\N	Customer 4381	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+38caae7c-8895-46c3-b7a6-76dd62844449	\N	Customer 4392	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a5e160ef-74e5-4980-ac11-281c6cf44b17	\N	Customer 4403	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ae33f385-ac66-4b53-aaed-662d28929a5b	\N	Customer 4413	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6843e18a-6b8d-4440-ab3b-eda4383c7e0a	\N	Customer 4454	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+79f97b1a-7511-43b4-a748-6b15b6107631	\N	Customer 4483	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f4e91ca1-105c-4f6f-80bd-ec0856640206	\N	Customer 4554	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+94220a4f-0315-4128-947e-4c1ea50c0fbb	\N	Customer 4682	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a1b6c260-bcaa-496f-8a3b-1ae1ff08cf3c	\N	Customer 4736	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0d5e398e-a0bc-47cf-84e3-395e1cefa339	\N	Customer 4745	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8f3eca01-3cd9-4c41-9cff-d2ada425e83d	\N	Customer 4784	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3f3b689d-ac86-4c1a-8c29-a89d6a582cf8	\N	Customer 4791	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+63ad0f25-a2f1-4982-bbc7-c550ed6e987d	\N	Customer 4809	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f92e2896-4079-4250-b697-c35f8ae9fcee	\N	Customer 4815	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7e335107-f187-4b05-998a-7d86a20e46d6	\N	Customer 4871	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7f68f608-f911-4c77-8333-aeb5d946aea5	\N	Customer 4877	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+80546d66-c801-45c8-9601-88b93933b882	\N	Customer 4892	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+34668d41-733a-4371-b41c-665e6096c27c	\N	Customer 4923	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b4b8355c-1cd8-4f94-a3e1-f7532810a096	\N	Customer 45	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a7ba15a4-1536-4b2e-92f9-32c6127c3c99	\N	Customer 53	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3363d2cf-d685-4561-97ea-a16fd9418561	\N	Customer 64	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+75953c96-68ad-494a-9f1a-80f877a87509	\N	Customer 75	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8fe63637-30fa-484b-98af-351d5f7ce971	\N	Customer 114	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a3934b36-5bf5-4a79-a157-db70bc5607e3	\N	Customer 245	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3462c0c0-6e38-44d8-b8ad-ab3c2fdc7110	\N	Customer 266	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a594d55d-9b64-480d-88fa-bf13d57b10a8	\N	Customer 281	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e025ba5d-8ad2-4154-bb26-e65a011fa9d2	\N	Customer 311	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c3f490e9-af68-4c02-a939-a6eb4f30c2f0	\N	Customer 315	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+63694b2b-b5a5-47ae-8ea3-11a47f65913c	\N	Customer 397	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c64528dc-dcf1-4a13-b06c-3b1a3562f2ca	\N	Customer 434	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+46a404f2-5ac1-4a4e-8ef7-a3a01998734f	\N	Customer 486	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4ccb6c83-4a7c-4b42-a0e0-f6c9262d83e3	\N	Customer 589	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6cf3300d-daf5-42a8-a6a1-ab18bad18c3e	\N	Customer 637	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bfbd4c05-8586-4775-8528-4b03b61bf286	\N	Customer 670	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2690b8a5-cd2e-4ee2-8cab-f5b886419e63	\N	Customer 726	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3ddd9752-ab5b-41e0-a1d4-f9260e7ad6a6	\N	Customer 761	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9aa91f21-e80a-4b26-9a60-4a79690f1ee2	\N	Customer 793	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ab80bf77-e703-41e9-8b93-a3ad0770690e	\N	Customer 860	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9927fd90-61ea-426d-a45f-ed08c5b68134	\N	Customer 861	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0668e6ac-8527-4b6c-8174-923472e560ce	\N	Customer 931	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9ef6ecbb-6e10-4895-baf7-0096eda24421	\N	Customer 989	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+34b0f1db-cd9f-4772-9ed0-348248c39a4d	\N	Customer 997	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3929d647-aef3-40c0-a564-9cd1062c2418	\N	Customer 1037	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d3047e67-879b-48d6-b671-104b05a07ac6	\N	Customer 1108	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0bb6f96f-3395-4354-8718-bda586565374	\N	Customer 1125	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b5d3a778-7f84-490d-b8e4-ab66ed3e0658	\N	Customer 1226	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2418ce65-a89d-4513-b178-c655e0da4228	\N	Customer 1275	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+39e08074-4822-4190-8323-6250542c86a2	\N	Customer 1314	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+00a2f0d1-d9bc-4b0a-abb1-53035b6e8e15	\N	Customer 1364	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+65c8fe93-332a-4649-8390-14f1bf137a5d	\N	Customer 1373	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+19aa6b6a-cf86-4640-be88-0bb822c1d2f3	\N	Customer 1398	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4b385103-ce05-44f3-b88f-480925b73c93	\N	Customer 1448	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+95665e87-8b8b-4d9f-9a37-0f66570bcd67	\N	Customer 1451	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9068fa54-4bc1-424b-967a-30f025c69073	\N	Customer 1504	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0c97affd-1638-4291-a46b-67e619207b42	\N	Customer 1558	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7e77cb36-4542-47d6-b295-fbffb3048ae1	\N	Customer 1576	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+26d5cd0f-0a63-4849-9c4a-572aeef7c9bb	\N	Customer 1620	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4404c358-d9dc-4750-a719-ee02cb665d5d	\N	Customer 1660	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1d79928d-c1ee-4aeb-b13e-26d486ebddf4	\N	Customer 1666	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+103bd982-d3d5-40d3-9c10-ec51c164fd3d	\N	Customer 1680	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fed30bd3-34e3-40d5-8b8b-3fd6f873ac87	\N	Customer 1714	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d1300f4a-fcb2-4610-8e72-b502c06a9c26	\N	Customer 1802	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9bd2a4b6-9c34-4ca7-85f9-e14c83491c82	\N	Customer 1816	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+41ce9c57-8665-4c90-88c9-cc3881a655aa	\N	Customer 1822	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+29fcc484-dd17-403f-916a-d57db6ef5253	\N	Customer 1865	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6001dd3d-5226-485a-8b4e-4478711d3d45	\N	Customer 1893	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e1582e4b-4151-4a9c-9320-ba527351cd4e	\N	Customer 1908	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2085b0e3-6745-42b2-8622-6cd0c21cae15	\N	Customer 1924	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a1b22511-7fbb-4441-979a-e38ad31fbc12	\N	Customer 1944	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+00d60c87-c004-4055-b1a0-7657a03bf1a1	\N	Customer 1960	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+67ad3965-8922-4b21-a029-109a6652205f	\N	Customer 1972	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7e505987-1234-40f7-b811-da561a7c8f58	\N	Customer 1979	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e9b0faaf-321d-44ad-8687-f19af3d5b886	\N	Customer 2029	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c46bf549-0f1a-4106-b380-4b1c386562e1	\N	Customer 2068	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ad5b1503-9363-43b0-b665-29f5b2a3b707	\N	Customer 2070	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+117a3399-b73f-46ff-a842-0060843de51c	\N	Customer 2094	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e143310b-2853-483b-83c1-de526e39f607	\N	Customer 2165	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ddc3d172-8d6f-4428-8825-d3672aa04cf9	\N	Customer 2178	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e2848e08-9ae0-459b-bf06-ba6c047d380b	\N	Customer 2180	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+61ea4f7b-62ff-4825-9b43-dc0ec9ccb435	\N	Customer 2194	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1569dd3b-8de2-489e-ac92-03be48d442a1	\N	Customer 2201	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9d11c2c9-333c-4113-b9bc-b7566102773f	\N	Customer 2203	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+720b8f86-4be0-42ef-943a-4d0cc136fe05	\N	Customer 2221	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fd1030e0-0aa0-440d-a160-e95f2129b8ef	\N	Customer 2273	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cb8812f7-fdb7-428b-9454-4ba276080531	\N	Customer 2377	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5e1af2f9-c953-4804-af4f-3c724ef24ee3	\N	Customer 2405	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+702c513d-22aa-49b4-9fa5-bc7dad4879f9	\N	Customer 2477	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+14b5615d-ac34-4964-a3dc-143f1c2ae945	\N	Customer 2507	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b6e850e4-b7b1-4ed5-8a74-4790fe4150f2	\N	Customer 2508	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d60079fa-2312-4e38-ab9f-9cca2d87665f	\N	Customer 2547	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f01c7222-62bf-434b-a2fb-eede6ea7d905	\N	Customer 2569	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+dd850c6d-a596-4a5a-81a2-d06b60e91166	\N	Customer 2576	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+dcbfeaa4-f6e7-4b7b-ab0e-c994881c8546	\N	Customer 2578	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8078ebf6-3333-402f-b70d-454647d563a3	\N	Customer 2587	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+11b67fed-8dc8-4c83-a785-f016f5821602	\N	Customer 2659	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7909b12c-7cd4-4775-b055-80715428f134	\N	Customer 2678	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8a2a96ab-3500-4b5b-a3cf-fd7392bec331	\N	Customer 2684	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9346abe3-65b6-46ae-a0de-1403fe182db4	\N	Customer 2695	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+83c652b4-c0af-4d29-aa20-9b0782df00bd	\N	Customer 2724	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7c68cadd-6b41-4931-878c-3add76efe10b	\N	Customer 2756	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+51ff8500-8b39-4d68-8262-2eb4221cd642	\N	Customer 2758	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+27a37158-4d34-4b32-9f89-b91b4f7293d3	\N	Customer 2785	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+beb942d3-75b3-4dc3-96d2-f4c08a869d59	\N	Customer 2797	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+82364963-ec56-46dc-af3c-dbbcd2db67a7	\N	Customer 2821	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cc11c9b2-1607-4fcf-bf89-d3bd0b69698e	\N	Customer 2829	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8055cabf-9cec-4a9f-be73-ef7e3af91a58	\N	Customer 2845	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ea873bb9-bc4c-487c-9e76-802c0752e955	\N	Customer 2941	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+de128931-d5df-4d4f-926b-efd20570e23a	\N	Customer 3009	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d82b4287-fea2-436f-b6d3-5a78faa8f2e8	\N	Customer 3013	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0e3feff4-54e3-416f-9e0a-d7fa23d47468	\N	Customer 3032	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f0167764-97a6-4754-ad4f-537dfc39a6b9	\N	Customer 3077	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5b879f88-7939-468c-b7a7-0c97a5bde31a	\N	Customer 3097	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+78cbdd90-fa8c-4771-b924-a388ea8e10a5	\N	Customer 3098	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b26d09c3-acad-4e60-811a-238d0d1c1e32	\N	Customer 3112	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5f6c88bd-3cc4-4c2b-93bc-f678a8ecf823	\N	Customer 3139	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2fd64514-d0d5-4f90-8488-92ae0591abb4	\N	Customer 3158	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+676531d3-96b7-4b64-b67a-e188207a50a9	\N	Customer 3186	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b374b058-41b0-470f-9c33-af5dc37a4b4a	\N	Customer 3229	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+624813a1-70ad-4536-a372-97f0e71bc571	\N	Customer 3239	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+372783ce-f9bd-4b86-8ef9-e3cca6e719b0	\N	Customer 3251	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+51a6cfb1-f57b-413e-a730-035e809031bf	\N	Customer 3281	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e6b1e06e-f901-4118-b25f-b7de645edcd4	\N	Customer 3325	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4e6aabca-e86e-4998-b33c-14f2ccc325b0	\N	Customer 3338	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ad7af768-7a31-423d-929d-c72c682c3cba	\N	Customer 3340	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+625af7bf-02a3-4384-b2fe-f315e6c10591	\N	Customer 3458	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+37e372ff-bc17-4970-a0b0-2f597175c135	\N	Customer 3497	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f74f8682-23aa-46ce-8b35-7ae650363204	\N	Customer 3508	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+76b645c4-0520-45c3-8541-5405ec4477e2	\N	Customer 3517	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ff7baca8-6888-4ab0-b5bb-924da6c7f6a7	\N	Customer 3539	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7788bb5b-4e5e-4aa8-951d-9a8d6e87ab9d	\N	Customer 3542	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9416a025-8c84-45cc-a9d3-dabc64985d06	\N	Customer 3543	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+384f5208-7c85-4a42-a609-d4289e172aa5	\N	Customer 3593	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6ded6c5c-a98f-4256-9e2e-9ce48ddf0044	\N	Customer 3598	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+09f5fd72-92ca-4651-9b44-48587d3b9034	\N	Customer 3638	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bef61f7b-abe1-47cb-8a4f-d4dce6a14d10	\N	Customer 3657	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4d2dbbfb-5958-4728-a1ef-c583e035b58c	\N	Customer 3688	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fc0cc0ca-8e5c-43bc-974a-09134f2783b8	\N	Customer 3728	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e28ae843-f7b9-4e2f-900c-2ac6460f4a92	\N	Customer 3746	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c32326be-c076-4981-8c6b-1c5881f6cde4	\N	Customer 3750	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c86a3897-0379-4850-b2eb-fa91284c5a45	\N	Customer 3798	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4e796373-63a8-4029-bb4b-6dc96dcd8862	\N	Customer 3856	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+26fe8c71-340c-4ade-ab75-3398daa9cac5	\N	Customer 3874	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5f70331d-15c8-4382-82b1-4d59c11b0e37	\N	Customer 3992	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+88c66b88-2d43-4da9-bdd0-1d8f21ec7889	\N	Customer 4021	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c1109b6c-0d58-466c-be42-dbbf062905ed	\N	Customer 4026	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3ea222bb-a768-40fb-b92f-3e801e5dee4a	\N	Customer 4042	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7b33e86d-66de-41c9-a876-fb06a066f168	\N	Customer 4043	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+46422d64-1ff3-40c6-9ec1-b73493c5f000	\N	Customer 4066	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+479e090c-b71d-4307-a059-f020b98752fd	\N	Customer 4088	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e585ade6-cd23-4b94-8dd3-1243a3fbc0ca	\N	Customer 4148	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+35259f53-4e7f-4f30-a86d-f5f12f079481	\N	Customer 4186	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+53ddc601-49e0-4414-b121-fe272390a696	\N	Customer 4229	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f3569ed1-cbc5-4533-a8d5-2e911e20216b	\N	Customer 4241	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3b8c549a-6c4d-4487-9957-d690f5bf69f7	\N	Customer 4321	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8f042129-e515-4345-bacc-5005c912692e	\N	Customer 4342	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a08f280e-7bd2-4079-970e-15c961de5fad	\N	Customer 4395	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+68eeab69-e12c-4ef4-818c-29c9811000f9	\N	Customer 4424	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bf34be6d-746c-49e1-8f11-9051a3e05303	\N	Customer 4438	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7c08bf0b-44dd-476d-9fa6-4e48d6f360f3	\N	Customer 4475	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5ea89d29-81b9-41c8-8619-ac878fa06f4a	\N	Customer 4499	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ae15af7d-8c8d-48d1-a9b0-94295ed35a89	\N	Customer 4523	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+51ec778f-d6cf-4c65-a5a7-7bb75499a7e9	\N	Customer 4525	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+504b0233-666b-47e6-8141-35ed3872f799	\N	Customer 4536	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e4359f76-17ee-4bae-91dc-ac9fed38ae85	\N	Customer 4544	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9ada4566-f6a6-4686-8239-88e0c10d0e0f	\N	Customer 4550	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+af066cf1-8fb6-44df-91ea-27d5ed906e12	\N	Customer 4598	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+022493f2-ab68-4690-a7aa-0ab8c86d8ae9	\N	Customer 4619	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+69f2a251-76d5-48ed-b94a-b4e60eaefe44	\N	Customer 4730	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+454be61d-f142-4baf-b525-7a2c0e4f66ed	\N	Customer 4808	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b813e388-8b26-4c6e-8ccf-5d8b7519fd54	\N	Customer 4818	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1b35e140-b7ed-4ce7-ab35-367d13928eab	\N	Customer 4831	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4698fbee-d152-454d-bb73-cd71c41434b7	\N	Customer 4839	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bffaa728-ec70-4c3f-9a98-00957088cf92	\N	Customer 4929	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0af10dc2-fdf6-4ce9-a7bf-b3be3d42af73	\N	Customer 4941	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d2db6b00-779d-486d-b868-37d599bbe758	\N	Customer 37	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+366df841-a270-4957-aac3-9f2ad74ef017	\N	Customer 40	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ee6c51a1-b7e2-4569-a8cb-7ee6299ee306	\N	Customer 87	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8e1dc316-09e8-4eaf-a18d-d2f1ff9ee281	\N	Customer 88	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f34672ef-8f3d-42f7-8338-53dd962e3a5c	\N	Customer 160	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d928e66d-882c-4882-bb93-b9dbe3d2110c	\N	Customer 178	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+67636565-27ea-4bca-989d-d43ca289a080	\N	Customer 192	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d9e48958-a5e2-4787-b0af-bdcd3fe98736	\N	Customer 269	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d927bcd3-edda-48d2-8261-519f61a718a6	\N	Customer 280	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1472b716-e572-402c-b226-0b41b158b390	\N	Customer 324	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+18d428b1-068a-407d-8f20-f2600bc46aca	\N	Customer 376	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+da3891ff-202f-444f-a3be-4724307b6095	\N	Customer 463	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8159b03c-a40e-444a-a42f-48821fd34703	\N	Customer 476	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cb813d84-cd1a-41de-8f55-d66cb8696a55	\N	Customer 478	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+59da474b-c583-4b0f-875c-1cad32167cb4	\N	Customer 503	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+363e8e98-fa1d-4a76-b80a-02e0c85d9315	\N	Customer 513	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cd5d6d3e-f21f-4e79-b4e6-b63b0677ea94	\N	Customer 585	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+995bd314-6930-401c-97c0-809af86f9ba1	\N	Customer 631	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8aa3bee1-2435-4e54-b854-c6d1902ece41	\N	Customer 642	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ecf6d54e-0250-4c54-869c-a774236757b9	\N	Customer 711	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+dadf4d65-901c-482e-a7d8-bec8fa3760e6	\N	Customer 823	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3b839365-cd21-423f-bc33-7a07398f0e39	\N	Customer 826	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1f2b8c39-7dbb-4092-91d0-3232b3aea706	\N	Customer 836	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b1296a96-8e85-4493-830b-d52a469fed4a	\N	Customer 905	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+df3f7adb-94d6-42be-be8b-ba8e4d395891	\N	Customer 921	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d7faa129-9cab-4792-8a98-714f26dfca7f	\N	Customer 960	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+071ca59f-2c50-49d1-924b-95e0badb18fb	\N	Customer 1003	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d85b1160-4900-4c14-8895-0c68d90dd5ae	\N	Customer 1022	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+83625fdc-ef03-4b31-9593-e5fff111bbba	\N	Customer 1025	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4f8e3ee4-d284-4013-95b0-54417e6c0411	\N	Customer 1036	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9430288e-980f-4b5a-b111-2fdbea830046	\N	Customer 1047	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cfa683f4-0e77-429f-8a36-cd67ba675e6b	\N	Customer 1130	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+913ed086-8fb2-4708-a782-6452894124d2	\N	Customer 1202	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bbe352c1-ba6e-46cc-ab39-7170e01d9296	\N	Customer 1217	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+17954a49-fe4a-445f-961a-72918d12c9bb	\N	Customer 1220	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f029ac54-4f3b-4800-b3ac-b011884a77c9	\N	Customer 1241	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8e507bfd-19a1-405b-ac15-5942934a5f3f	\N	Customer 1248	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ca39e3d1-d859-4747-bb16-f650a65f7027	\N	Customer 1273	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9edc8e29-4714-4be5-bd46-279c81873ccd	\N	Customer 1290	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e6cc5584-6cf0-4760-895d-ae356d641567	\N	Customer 1295	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3ef27f4e-17ca-4a08-8039-2341bb62672e	\N	Customer 1317	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+302778a1-946b-4d58-bbd0-a38e013e997f	\N	Customer 1401	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+68d71a88-1558-4c13-bcbd-31850838c7d0	\N	Customer 1415	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+22143ee8-ddca-470c-915a-c619cacb017a	\N	Customer 1463	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bc7b6403-7da7-43db-a784-8ee5f97c1ef2	\N	Customer 1572	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9fd7694e-a1c3-4f98-99be-c54f8dfb7e99	\N	Customer 1607	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5f190227-4318-4895-b7cd-e47c746da84f	\N	Customer 1658	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+992b02b2-42a0-4300-acf1-5f871d867ff4	\N	Customer 1691	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3cfc35dc-ba04-446c-b546-549755c6d1f0	\N	Customer 1726	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+97e04c94-4928-491e-8d06-5204eae8a0a8	\N	Customer 1733	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+965f7f9e-8e51-43ff-b9a3-1a67db533e34	\N	Customer 1754	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0928b65a-a00e-4104-9e46-bb381ccf2652	\N	Customer 1759	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+af919308-9f39-44ba-b3f7-5b1f27c6c223	\N	Customer 1809	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f36618a8-1581-471c-b371-89c9774334c2	\N	Customer 1886	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a50a681a-d84e-4bf9-97bc-4d55b3d96f61	\N	Customer 1909	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4949b723-58bb-45a4-abb3-9740f29164b5	\N	Customer 1948	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9b256994-b234-408d-a2a4-5fd0b49165f5	\N	Customer 1975	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+96906eed-39d7-42d4-aa77-68b99741e895	\N	Customer 1999	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+52cdb4a9-c245-4693-b647-929f3066a98c	\N	Customer 2048	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+25afa308-c752-41ca-ae71-c378760f7396	\N	Customer 2089	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9d08f422-f45c-4cdc-92a2-3c6d6c0a4e2c	\N	Customer 2136	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7227ecd1-f695-43b8-ab0a-9f4736c6fa3b	\N	Customer 2172	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+feecbd0a-e09f-4a9e-9101-2a88e8e00a30	\N	Customer 2193	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+26f5c32b-aea2-4a5c-8e12-b56b76cfe988	\N	Customer 2227	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8d9f4d94-0a4f-4e49-9469-71dd26431e44	\N	Customer 2241	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3b860c80-8023-4b2a-b8e7-2eac2a4814b9	\N	Customer 2271	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0ba43a6f-9c20-4ce9-856b-f599de80bcc2	\N	Customer 2280	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+896db26b-f61e-4c34-bc8c-28c940022095	\N	Customer 2283	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+dbe53182-26ab-490a-af61-5147e008b76b	\N	Customer 2323	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8c26d35d-e785-4c76-83c4-dc4ab3d92379	\N	Customer 2375	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0a1b0736-abad-4f49-81f3-19d4eb3e942e	\N	Customer 2381	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3fba2d1c-e653-4e1f-9a50-0e7b7ac7046f	\N	Customer 2410	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0b5b5ffc-fc85-410b-832b-3db569d3cbce	\N	Customer 2438	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8a0f4413-d0d8-436d-86f4-d6eea197a8d7	\N	Customer 2440	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e8544a27-2e8b-4b0b-b980-8a6ebed24880	\N	Customer 2528	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fd3217f4-253e-477c-9a6b-1b74a597de70	\N	Customer 2530	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+277daf06-f939-4093-8207-f4373933b94e	\N	Customer 2554	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3f79b34d-7cc3-46d2-8eff-ffb6b75578e0	\N	Customer 2573	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f106468b-39d6-44fa-ab62-3afacaab247c	\N	Customer 2592	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+866f4be8-1a19-4321-8be9-c63e9b5a0eb9	\N	Customer 2599	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d0fa443b-71a6-4533-800e-69e456b4a99d	\N	Customer 2680	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3b5107dc-d471-4244-8f0a-155ee29b8f88	\N	Customer 2686	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+60ecf649-603d-4817-b945-4a796ec922e5	\N	Customer 2688	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+fc082118-b42c-43a7-9a62-579312b1e10e	\N	Customer 2715	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+12625f67-5833-4633-84cd-066d9dd9181a	\N	Customer 2755	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b64f9bc8-9834-48b7-9896-97b42e1a4e1b	\N	Customer 2762	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+cc9a9c60-2f00-493b-b779-b1745e02b1b8	\N	Customer 2853	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e5f41733-eb18-496a-a1b5-c70f1f96ceaa	\N	Customer 2874	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9e398159-a19d-4de4-acf4-3cea6a984dd0	\N	Customer 2893	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d381878a-ff36-4e8c-ae82-c1aaeee9ce58	\N	Customer 2902	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7de75f16-d4e3-461a-a332-97a10f643a78	\N	Customer 2936	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ba27a12c-41d0-4cff-9b51-f7fb447cfe78	\N	Customer 2985	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+16c808a4-482d-42b7-97b8-cbabc1cebeee	\N	Customer 3054	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+621b17ad-cb66-4316-968e-272e5f1351a8	\N	Customer 3066	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f813d0d8-76fa-446e-aac6-f0c0c5d44831	\N	Customer 3115	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c4a473c1-38fa-48b9-8909-7c50bd958c1b	\N	Customer 3117	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+db051438-d37a-4594-a075-f611952c206b	\N	Customer 3123	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0e4d38c1-ad10-489a-bc53-bc753a6ee9aa	\N	Customer 3133	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+1fa2746a-17d0-4bb8-9027-6939ad42fbc8	\N	Customer 3161	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2ec75c6f-beea-454e-9e96-e7b2af058c5e	\N	Customer 3196	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5b042b39-5194-45ad-b5d3-54486ab71a79	\N	Customer 3222	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+baa55b4b-3075-49e9-9122-347acb09500e	\N	Customer 3265	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+66f112d7-f518-4236-8279-4df9b423dbfc	\N	Customer 3355	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8a3dd76d-41ad-4516-ade6-7da1e8a346e2	\N	Customer 3383	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+96e3ce58-8740-4f5b-b1aa-b7ef8364697f	\N	Customer 3501	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+7b1527b9-5315-4702-bd30-15cfd32b7d69	\N	Customer 3527	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+8676543f-0ed4-4f40-a37f-2200401d730e	\N	Customer 3585	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a8b0edf7-7a9f-496c-8520-f16f6696b983	\N	Customer 3606	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0f9d69a5-8312-47dd-977d-59560ae32477	\N	Customer 3753	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d1bd9915-ba19-4633-a6b6-43cd5c30cef5	\N	Customer 3782	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a1c9eeaa-d929-46d4-9a26-c45289ebb64e	\N	Customer 3808	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2cebfbf2-cdfd-41c5-a997-0ad8cfc2de55	\N	Customer 3910	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+d06983e9-d7ff-47dc-9455-99298322cfa7	\N	Customer 3945	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+de401bf4-aa27-4bbd-8cbc-1042e48870fa	\N	Customer 3972	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+11f9529b-8b43-48e6-a474-436062b8f468	\N	Customer 3990	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9cea44aa-0944-4678-a126-9902a0773e98	\N	Customer 3996	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+12f3adbe-238a-4010-9fe4-ac1fa47a0ab1	\N	Customer 4035	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+9b858304-f2a1-426b-b8ad-ff95ffd5311a	\N	Customer 4058	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+84715ac9-c7da-4250-99b2-a40e377792e1	\N	Customer 4090	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+87205e15-78ac-4e2b-9650-19b4da335234	\N	Customer 4098	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+44d43708-18db-4539-8162-80d0b42c961f	\N	Customer 4177	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5b64fdd3-329c-4953-906f-fef7e94710a1	\N	Customer 4184	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+e464fd87-17e1-448d-96ff-50677bff1228	\N	Customer 4235	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a2a1a01f-a916-47f4-a9ef-1bff7d280f74	\N	Customer 4246	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+f95d5032-5851-475c-9f83-f891a41d48f0	\N	Customer 4269	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+3fe189b4-5203-47a6-bac4-dc2d22e5a4f6	\N	Customer 4362	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+666d9bbe-f880-444a-baf8-7f2612017edb	\N	Customer 4406	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+45e34127-09fe-4cb3-be4f-f9bf34e6c791	\N	Customer 4417	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+36675dcf-0128-4ef1-a128-aaa1712297c6	\N	Customer 4422	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+6037bf11-d5db-498d-b31c-166c2d70afe0	\N	Customer 4445	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c7f54fac-275d-4d05-bafe-84bce3b3765f	\N	Customer 4455	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+862b50c7-67c4-4181-b905-f7c5cfe39d14	\N	Customer 4464	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+c16b58ed-542a-4600-96b0-fff63f4c8578	\N	Customer 4468	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a39b4743-7465-48a6-98ce-f5a25360d62d	\N	Customer 4479	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+2119d9c0-ad9d-4f66-a389-5868e903444b	\N	Customer 4516	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+b8aec43d-2c7b-467a-95bf-a0894ec000bf	\N	Customer 4538	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+006f33fd-4fee-48e9-b1cb-7ab4aed68a9b	\N	Customer 4563	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4913fa6c-ff72-4492-8b76-7f9179536816	\N	Customer 4617	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+0757678a-e2b5-4121-a481-29d980bfb731	\N	Customer 4687	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4cb49ba8-c1f0-4ded-94c9-3b0356f11252	\N	Customer 4755	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ea365982-68d7-4efe-9f67-5d1965f76f55	\N	Customer 4820	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+471660c9-c5cb-4ea2-bc59-ad4f0e9a7361	\N	Customer 4846	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+ba8ce899-d1ad-4df4-8235-4918dd2e4f22	\N	Customer 4847	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+bb3a9b74-df55-4ca4-a829-55af97d7d9cf	\N	Customer 4906	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+5db17aa0-5e0c-4b01-80c3-250f83fe02ba	\N	Customer 4928	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+a4c70dcf-5413-4d55-9327-a7fb56a7a691	\N	Customer 4971	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+4d519e8a-ec0a-4d37-ad4c-2ac9f4f07b96	\N	Customer 4994	\N	\N	\N	\N	2025-11-30 04:37:36.915714
+\.
+
+
