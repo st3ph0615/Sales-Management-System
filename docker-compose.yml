@@ -11,9 +11,13 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: salesmanagement
       POSTGRES_HOST_AUTH_METHOD: trust
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_wal_senders=10
+      -c max_replication_slots=10
     networks:
       - citus_network
-    command: postgres
 
   worker1:
     image: citusdata/citus:12.1
@@ -23,11 +27,29 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: salesmanagement
       POSTGRES_HOST_AUTH_METHOD: trust
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_wal_senders=10
+      -c max_replication_slots=10
     networks:
       - citus_network
-    depends_on:
-      - coordinator
-    command: postgres
+
+  worker2:
+    image: citusdata/citus:12.1
+    container_name: citus_worker2
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: salesmanagement
+      POSTGRES_HOST_AUTH_METHOD: trust
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+    networks:
+      - citus_network
 
 networks:
   citus_network:
