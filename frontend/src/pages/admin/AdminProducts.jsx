@@ -8,6 +8,9 @@ export default function AdminProducts() {
 
   const [editingProduct, setEditingProduct] = useState(null);
 
+  // ✅ LOW STOCK TOGGLE STATE (ADDED)
+  const [showLowStock, setShowLowStock] = useState(false);
+
   // Add product form
   const [form, setForm] = useState({
     product_name: "",
@@ -31,6 +34,11 @@ export default function AdminProducts() {
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   };
+
+  // ✅ FILTER PRODUCTS BASED ON STOCK (ADDED)
+  const displayedProducts = showLowStock
+    ? products.filter(p => p.stock_quantity <= 5)
+    : products;
 
   // --------------------------
   // ADD PRODUCT
@@ -88,45 +96,54 @@ export default function AdminProducts() {
 
     alert("Product updated!");
 
-    // Update UI
     setProducts((prev) =>
       prev.map((p) =>
         p.product_id === editingProduct.product_id ? editingProduct : p
       )
     );
 
-    setEditingProduct(null); // close modal
+    setEditingProduct(null);
   };
 
   // --------------------------
   // DELETE PRODUCT
   // --------------------------
   const deleteProduct = async (id) => {
-  if (!window.confirm("Delete this product permanently?")) return;
+    if (!window.confirm("Delete this product permanently?")) return;
 
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-  const res = await fetch(`http://localhost:5000/api/admin/products/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` }
-  });
+    const res = await fetch(`http://localhost:5000/api/admin/products/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!res.ok) {
-    alert("Delete failed: " + data.error);
-    return;
-  }
+    if (!res.ok) {
+      alert("Delete failed: " + data.error);
+      return;
+    }
 
-  alert("Product deleted permanently");
+    alert("Product deleted permanently");
 
-  setProducts(prev => prev.filter(p => p.product_id !== id));
-};
+    setProducts(prev => prev.filter(p => p.product_id !== id));
+  };
 
   return (
     <AdminLayout>
       <div className="admin-products-page">
-        <h1>Products</h1>
+
+        {/* ✅ HEADER WITH LOW-STOCK BUTTON (ADDED) */}
+        <div className="products-header">
+          <h1>Products</h1>
+          <button
+            className="btn small"
+            onClick={() => setShowLowStock(prev => !prev)}
+          >
+            {showLowStock ? "View All Products" : "View Low-Stock Items"}
+          </button>
+        </div>
 
         {/* ADD PRODUCT FORM */}
         <form className="add-product-form" onSubmit={handleAddProduct}>
@@ -194,14 +211,14 @@ export default function AdminProducts() {
             </thead>
 
             <tbody>
-              {products.length === 0 ? (
+              {displayedProducts.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="empty">
                     No products found.
                   </td>
                 </tr>
               ) : (
-                products.map((p) => (
+                displayedProducts.map((p) => (
                   <tr key={p.product_id}>
                     <td>
                       <img src={p.image_url} alt="" className="prod-img" />
