@@ -12,6 +12,9 @@ export default function AdminProducts() {
   const [showLowStock, setShowLowStock] = useState(false);
   // ✅ SEARCH STATE (ADDED)
   const [search, setSearch] = useState("");
+  // ✅ CATEGORY FILTER STATE
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
 
 
   // Add product form
@@ -38,11 +41,22 @@ export default function AdminProducts() {
       .finally(() => setLoading(false));
   };
 
+  // ✅ GET UNIQUE CATEGORIES
+const categories = [
+  "all",
+  ...new Set(products.map(p => p.category))
+];
+
+
     const displayedProducts = products
-    .filter(p => (showLowStock ? p.stock_quantity <= 5 : true))
-    .filter(p =>
-      p.product_name.toLowerCase().includes(search.toLowerCase())
-    );
+  .filter(p => (showLowStock ? p.stock_quantity <= 5 : true))
+  .filter(p =>
+    p.product_name.toLowerCase().includes(search.toLowerCase())
+  )
+  .filter(p =>
+    categoryFilter === "all" ? true : p.category === categoryFilter
+  );
+
 
 
   // --------------------------
@@ -164,7 +178,24 @@ export default function AdminProducts() {
       {showLowStock ? "View All Products" : "View Low-Stock Items"}
     </button>
   </div>
+  <select
+  value={categoryFilter}
+  onChange={(e) => setCategoryFilter(e.target.value)}
+  style={{
+    padding: "6px",
+    borderRadius: "4px",
+    border: "1px solid #ccc"
+  }}
+>
+  {categories.map((cat) => (
+    <option key={cat} value={cat}>
+      {cat === "all" ? "All Categories" : cat}
+    </option>
+  ))}
+</select>
+
 </div>
+
 
 
         {/* ADD PRODUCT FORM */}
