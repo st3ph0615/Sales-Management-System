@@ -10,6 +10,9 @@ export default function AdminProducts() {
 
   // ✅ LOW STOCK TOGGLE STATE (ADDED)
   const [showLowStock, setShowLowStock] = useState(false);
+  // ✅ SEARCH STATE (ADDED)
+  const [search, setSearch] = useState("");
+
 
   // Add product form
   const [form, setForm] = useState({
@@ -35,10 +38,12 @@ export default function AdminProducts() {
       .finally(() => setLoading(false));
   };
 
-  // ✅ FILTER PRODUCTS BASED ON STOCK (ADDED)
-  const displayedProducts = showLowStock
-    ? products.filter(p => p.stock_quantity <= 5)
-    : products;
+    const displayedProducts = products
+    .filter(p => (showLowStock ? p.stock_quantity <= 5 : true))
+    .filter(p =>
+      p.product_name.toLowerCase().includes(search.toLowerCase())
+    );
+
 
   // --------------------------
   // ADD PRODUCT
@@ -136,14 +141,31 @@ export default function AdminProducts() {
 
         {/* ✅ HEADER WITH LOW-STOCK BUTTON (ADDED) */}
         <div className="products-header">
-          <h1>Products</h1>
-          <button
-            className="btn small"
-            onClick={() => setShowLowStock(prev => !prev)}
-          >
-            {showLowStock ? "View All Products" : "View Low-Stock Items"}
-          </button>
-        </div>
+  <h1>Products</h1>
+
+  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+    <input
+      type="text"
+      placeholder="Search product name..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      style={{
+        padding: "6px 10px",
+        border: "1px solid #ccc",
+        borderRadius: "4px",
+        marginBottom: "10px"
+      }}
+    />
+
+    <button
+      className="btn small"
+      onClick={() => setShowLowStock(prev => !prev)}
+    >
+      {showLowStock ? "View All Products" : "View Low-Stock Items"}
+    </button>
+  </div>
+</div>
+
 
         {/* ADD PRODUCT FORM */}
         <form className="add-product-form" onSubmit={handleAddProduct}>
